@@ -1,0 +1,9 @@
+import tqdm
+from torchvision.datasets import STL10
+
+dataset = STL10(
+    root='/Data/federated_learning/kd_jetson_clip_ex/data/',
+    download=True,
+    split="test"
+)
+print('y')
