@@ -83,7 +83,7 @@ def precompute_clip_stl10_image_embeddings(
 
 def precompute_clip_stl10_unlabeled_image_embeddings(exp_name, data_path):
     precompute_clip_stl10_image_embeddings(
-        output_dir="data/clip/"+exp_name+'stl10_unlabeled_image_embeddings',
+        output_dir="data/clip/"+exp_name+'/stl10_unlabeled_image_embeddings',
         dataset_path=data_path,
         data_split="unlabeled"
     )
@@ -113,11 +113,11 @@ def precompute_clip_stl10_text_embeddings(exp_name):
     )
 
 
-def get_clip_stl10_text_embeddings():
-    return torch.load("data/clip/stl10_text_embeddings.pt")
+def get_clip_stl10_text_embeddings(exp_name):
+    return torch.load("data/clip/"+exp_name+"/stl10_text_embeddings.pt")
 
 
-def get_stl10_unlabeled_embedding_dataset(transform=get_stl10_transform()):
+def get_stl10_unlabeled_embedding_dataset(exp_name,transform=get_stl10_transform()):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -127,11 +127,11 @@ def get_stl10_unlabeled_embedding_dataset(transform=get_stl10_transform()):
             split="unlabeled",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_unlabeled_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"stl10_unlabeled_image_embeddings"
     )
 
 
-def get_stl10_train_embedding_dataset(transform=get_stl10_transform()):
+def get_stl10_train_embedding_dataset(exp_name,transform=get_stl10_transform()):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -141,18 +141,18 @@ def get_stl10_train_embedding_dataset(transform=get_stl10_transform()):
             split="train",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_train_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"/stl10_train_image_embeddings/"
     )
 
 
-def get_stl10_train_unlabeled_embedding_dataset(transform=get_stl10_transform()):
+def get_stl10_train_unlabeled_embedding_dataset(exp_name,transform=get_stl10_transform()):
     return torch.utils.data.ConcatDataset([
-        get_stl10_train_embedding_dataset(transform),
-        get_stl10_unlabeled_embedding_dataset(transform)
+        get_stl10_train_embedding_dataset(exp_name,transform),
+        get_stl10_unlabeled_embedding_dataset(exp_name,transform)
     ])
 
 
-def get_stl10_test_embedding_dataset(transform=get_stl10_transform()):
+def get_stl10_test_embedding_dataset(exp_name,transform=get_stl10_transform()):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -162,12 +162,12 @@ def get_stl10_test_embedding_dataset(transform=get_stl10_transform()):
             split="test",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_test_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"/stl10_test_image_embeddings"
     )
 
 
-def eval_stl10_train_clip_embeddings(transform=get_stl10_transform()):
-    text_embeddings = get_clip_stl10_text_embeddings()
+def eval_stl10_train_clip_embeddings(exp_name,transform=get_stl10_transform()):
+    text_embeddings = get_clip_stl10_text_embeddings(exp_name)
     dataset = get_stl10_train_embedding_dataset(transform)
     accuracy = eval_dataset_clip_embeddings(dataset, text_embeddings)
     with open("data/clip/stl10_train_clip_acc.txt", 'w') as f:
@@ -175,9 +175,9 @@ def eval_stl10_train_clip_embeddings(transform=get_stl10_transform()):
     return accuracy
 
 
-def eval_stl10_test_clip_embeddings():
-    text_embeddings = get_clip_stl10_text_embeddings()
-    dataset = get_stl10_test_embedding_dataset()
+def eval_stl10_test_clip_embeddings(exp_name):
+    text_embeddings = get_clip_stl10_text_embeddings(exp_name)
+    dataset = get_stl10_test_embedding_dataset(exp_name)
     accuracy = eval_dataset_clip_embeddings(dataset, text_embeddings)
     with open("data/clip/stl10_test_clip_acc.txt", 'w') as f:
         f.write(f"ACCURACY: {accuracy}")
@@ -186,12 +186,12 @@ def eval_stl10_test_clip_embeddings():
 # Probe ablation
 
 
-def train_probe_model_linear(exp_name='ood_gaussian_noise_unlabeled'):
+def train_probe_model_linear(exp_name):
     train_probe_model(
         output_dir="data/experiments/"+exp_name+"/train_probe_model_linear",
         probe_model=nn.Linear(512, len(STL10_LABELS)),
-        train_dataset=get_stl10_train_embedding_dataset(),
-        test_dataset=get_stl10_test_embedding_dataset(),
+        train_dataset=get_stl10_train_embedding_dataset(exp_name),
+        test_dataset=get_stl10_test_embedding_dataset(exp_name),
         learning_rate=3e-4,
         batch_size=64,
         num_workers=8,
@@ -224,6 +224,7 @@ def train_probe_model_mlp():
 
 def train_student_linear_probe(
         f_name,
+        exp_name,
         output_dir: str,
         arch: str,
         temperature: float=1.,
@@ -231,17 +232,17 @@ def train_student_linear_probe(
         test_dataset=None
     ):
     if train_dataset is None:
-        train_dataset = get_stl10_train_unlabeled_embedding_dataset()
+        train_dataset = get_stl10_train_unlabeled_embedding_dataset(exp_name)
     if test_dataset is None:
-        test_dataset = get_stl10_test_embedding_dataset()
+        test_dataset = get_stl10_test_embedding_dataset(exp_name)
     # call train_probe_model_linear first
     probe_model = nn.Linear(512, len(STL10_LABELS))
-    probe_weights = "data/experiments/train_probe_model_linear/checkpoint_14.pth"
+    probe_weights = "data/experiments/"+exp_name+"/train_probe_model_linear/checkpoint_14.pth"
     if not os.path.exists(probe_weights):
-        train_probe_model_linear(exp_name='ood_gaussian_noise_unlabeled')
-    exp_name = 'ood_gaussian_noise_unlabeled'
-    probe_model.load_state_dict(torch.load("data/experiments/"+exp_name+"/train_probe_model_linear/checkpoint_14.pth"))
+        train_probe_model_linear(exp_name)
+        probe_model.load_state_dict(torch.load("data/experiments/"+exp_name+"/train_probe_model_linear/checkpoint_14.pth"))
     train_student_classification_model(
+        exp_name,
         f_name,
         output_dir=output_dir,
         model=timm.create_model(arch, num_classes=len(STL10_LABELS)),
@@ -257,6 +258,7 @@ def train_student_linear_probe(
     )
 
 def train_student_zero_shot(
+        exp_name,
         f_name,
         output_dir: str,
         arch: str,
@@ -265,10 +267,11 @@ def train_student_zero_shot(
         test_dataset = None
     ):
     if train_dataset is None:
-        train_dataset = get_stl10_train_unlabeled_embedding_dataset()
+        train_dataset = get_stl10_train_unlabeled_embedding_dataset(exp_name)
     if test_dataset is None:
-        test_dataset = get_stl10_test_embedding_dataset()
+        test_dataset = get_stl10_test_embedding_dataset(exp_name)
     train_student_classification_model(
+        exp_name,
         f_name,
         output_dir=output_dir,
         model=timm.create_model(arch, num_classes=len(STL10_LABELS)),
@@ -279,7 +282,7 @@ def train_student_zero_shot(
         num_workers=8,
         num_epochs=50,
         temperature=temperature,
-        text_embeddings=get_clip_stl10_text_embeddings(),
+        text_embeddings=get_clip_stl10_text_embeddings(exp_name),
         seed=0
     )
 
@@ -289,8 +292,8 @@ def train_resnet18_from_scratch(exp_name):
     train_model_from_scratch(
         output_dir="data/experiments/"+exp_name+"/train_resnet18_from_scratch",
         model=timm.create_model("resnet18", num_classes=len(STL10_LABELS)),
-        train_dataset=get_stl10_train_embedding_dataset(),
-        test_dataset=get_stl10_test_embedding_dataset(),
+        train_dataset=get_stl10_train_embedding_dataset(exp_name),
+        test_dataset=get_stl10_test_embedding_dataset(exp_name),
         learning_rate=3e-4,
         batch_size=64,
         num_workers=8,
@@ -301,15 +304,17 @@ def train_resnet18_from_scratch(exp_name):
 def train_resnet18_zero_shot_train_only(f_name,exp_name):
     train_student_zero_shot(
         f_name,
+        exp_name,
         output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot_train_only",
         arch="resnet18",
         temperature=1.,
-        train_dataset=get_stl10_train_embedding_dataset()
+        train_dataset=get_stl10_train_embedding_dataset(exp_name)
     )
 
 def train_resnet18_zero_shot(f_name, exp_name):
     train_student_zero_shot(
         f_name,
+        exp_name,
         output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot",
         arch="resnet18",
         temperature=1.
@@ -338,6 +343,7 @@ def train_resnet18_zero_shot_t2():
 def train_resnet18_linear_probe(f_name, exp_name):
     train_student_linear_probe(
         f_name,
+        exp_name,
         output_dir=f"data/experiments/"+exp_name+"train_resnet18_linear_probe",
         arch="resnet18", 
         temperature=1.
@@ -346,10 +352,11 @@ def train_resnet18_linear_probe(f_name, exp_name):
 def train_resnet18_linear_probe_train_only(f_name,exp_name):
     train_student_linear_probe(
         f_name,
+        exp_name,
         output_dir=f"data/experiments/"+exp_name+"/train_resnet18_linear_probe_train_only",
         arch="resnet18", 
         temperature=1.,
-        train_dataset=get_stl10_train_embedding_dataset()
+        train_dataset=get_stl10_train_embedding_dataset(exp_name)
     )
 
 def train_resnet18_linear_probe_tp5():
@@ -380,7 +387,7 @@ def train_resnet50_linear_probe():
         temperature=1.
     )
 
-def train_embedding_text(output_dir: str, arch: str, train_dataset=None,
+def train_embedding_text(exp_name, output_dir: str, arch: str, train_dataset=None,
         test_dataset=None, weight_by_nearest_embedding=False, nearest_embedding_weight_std=1.):
     if train_dataset is None:
         train_dataset = get_stl10_train_unlabeled_embedding_dataset()
@@ -395,15 +402,15 @@ def train_embedding_text(output_dir: str, arch: str, train_dataset=None,
         batch_size=64,
         num_workers=8,
         num_epochs=50,
-        text_embeddings=get_clip_stl10_text_embeddings(),
+        text_embeddings=get_clip_stl10_text_embeddings(exp_name),
         seed=0,
         include_test_accuracy=True,
         weight_by_nearest_embedding=weight_by_nearest_embedding,
         nearest_embedding_weight_std=nearest_embedding_weight_std
     )
 
-def train_resnet18_embedding_text():
-    train_embedding_text(f"data/experiments/train_resnet18_embedding_text","resnet18")
+def train_resnet18_embedding_text(exp_name):
+    train_embedding_text(f"data/experiments/train_resnet18_embedding_text","resnet18", exp_name)
 
 
 def eval_resnet18_embedding_text():
@@ -417,39 +424,39 @@ def eval_resnet18_embedding_text():
         text_embeddings=get_clip_stl10_text_embeddings()
     )
 
-def eval_resnet18_embedding_linear():
+def eval_resnet18_embedding_linear(exp_name):
     model = timm.create_model("resnet18", num_classes=512)
-    model.load_state_dict(torch.load("data/experiments/train_resnet18_embedding_text/checkpoint_48.pth"))
+    model.load_state_dict(torch.load("data/experiments/"+exp_name+"/train_resnet18_embedding_text/checkpoint_48.pth"))
 
     probe_model = nn.Linear(512, len(STL10_LABELS))
-    probe_weights = "data/experiments/train_probe_model_linear/checkpoint_14.pth"
+    probe_weights = "data/experiments/"+exp_name+"/train_probe_model_linear/checkpoint_14.pth"
     if not os.path.exists(probe_weights):
         train_probe_model_linear()
     probe_model.load_state_dict(torch.load(probe_weights))
 
     eval_embeddings_model(
-        output_dir=f"data/experiments/eval_resnet18_embedding_linear",
+        output_dir=f"data/experiments/"+exp_name+"/eval_resnet18_embedding_linear",
         model=model,
         dataset=get_stl10_test_embedding_dataset(),
         probe_model=probe_model
     )
 
 
-def eval_resnet18_embedding_mlp():
+def eval_resnet18_embedding_mlp(exp_name):
     model = timm.create_model("resnet18", num_classes=512)
-    model.load_state_dict(torch.load("data/experiments/train_resnet18_embedding_text/checkpoint_48.pth"))
+    model.load_state_dict(torch.load("data/experiments/"+exp_name+"/train_resnet18_embedding_text/checkpoint_48.pth"))
 
     probe_model = nn.Sequential(
         nn.Linear(512, 512),
         nn.ReLU(),
         nn.Linear(512, len(STL10_LABELS))
     )
-    probe_weights = "data/experiments/train_probe_model_mlp/checkpoint_14.pth"
+    probe_weights = "data/experiments/"+exp_name+"/train_probe_model_mlp/checkpoint_14.pth"
     if not os.path.exists(probe_weights):
         train_probe_model_mlp()
     probe_model.load_state_dict(torch.load(probe_weights))
     eval_embeddings_model(
-        output_dir=f"data/experiments/eval_resnet18_embedding_mlp",
+        output_dir=f"data/experiments/"+exp_name+"/eval_resnet18_embedding_mlp",
         model=model,
         dataset=get_stl10_test_embedding_dataset(),
         probe_model=probe_model

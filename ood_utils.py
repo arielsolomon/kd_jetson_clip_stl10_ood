@@ -220,6 +220,7 @@ def train_probe_model_mlp():
 
 
 def train_student_linear_probe(
+        exp_name,
         f_name,
         output_dir: str,
         arch: str,
@@ -228,17 +229,18 @@ def train_student_linear_probe(
         test_dataset=None
     ):
     if train_dataset is None:
-        train_dataset = get_stl10_train_unlabeled_embedding_dataset()
+        train_dataset = get_stl10_train_unlabeled_embedding_dataset(exp_name)
     if test_dataset is None:
-        test_dataset = get_stl10_test_embedding_dataset()
+        test_dataset = get_stl10_test_embedding_dataset(exp_name)
     # call train_probe_model_linear first
     probe_model = nn.Linear(512, len(STL10_LABELS))
-    probe_weights = "data/experiments/train_probe_model_linear/checkpoint_14.pth"
+    probe_weights = "data/experiments/"+exp_name+"/train_probe_model_linear/checkpoint_14.pth"
     if not os.path.exists(probe_weights):
         train_probe_model_linear()
-    probe_model.load_state_dict(torch.load("data/experiments/train_probe_model_linear/checkpoint_14.pth"))
+    probe_model.load_state_dict(torch.load("data/experiments/"+exp_name+"train_probe_model_linear/checkpoint_14.pth"))
     train_student_classification_model(
-        f_name,
+        exp_name=exp_name,
+        f_name=f_name,
         output_dir=output_dir,
         model=timm.create_model(arch, num_classes=len(STL10_LABELS)),
         train_dataset=train_dataset,
@@ -253,6 +255,7 @@ def train_student_linear_probe(
     )
 
 def train_student_zero_shot(
+        exp_name,
         f_name,
         output_dir: str,
         arch: str,
@@ -294,19 +297,19 @@ def train_resnet18_from_scratch():
         seed=0
     )
 
-def train_resnet18_zero_shot_train_only(f_name):
+def train_resnet18_zero_shot_train_only(f_name,exp_name):
     train_student_zero_shot(
         f_name,
-        output_dir=f"data/experiments/train_resnet18_zero_shot_train_only",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot_train_only",
         arch="resnet18",
         temperature=1.,
         train_dataset=get_stl10_train_embedding_dataset()
     )
 
-def train_resnet18_zero_shot(f_name):
+def train_resnet18_zero_shot(f_name, exp_name):
     train_student_zero_shot(
         f_name,
-        output_dir=f"data/experiments/train_resnet18_zero_shot",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot",
         arch="resnet18",
         temperature=1.
     )
@@ -331,18 +334,18 @@ def train_resnet18_zero_shot_t2():
         temperature=2.0
     )
 
-def train_resnet18_linear_probe(f_name):
+def train_resnet18_linear_probe(f_name, exp_name):
     train_student_linear_probe(
         f_name,
-        output_dir=f"data/experiments/train_resnet18_linear_probe",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_linear_probe",
         arch="resnet18", 
         temperature=1.
     )
 
-def train_resnet18_linear_probe_train_only(f_name):
+def train_resnet18_linear_probe_train_only(f_name, exp_name):
     train_student_linear_probe(
         f_name,
-        output_dir=f"data/experiments/train_resnet18_linear_probe_train_only",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_linear_probe_train_only",
         arch="resnet18", 
         temperature=1.,
         train_dataset=get_stl10_train_embedding_dataset()

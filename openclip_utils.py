@@ -259,6 +259,7 @@ def eval_logits_model(
 
 
 def train_student_classification_model(
+        exp_name,
         f_name,
         output_dir,
         model,
