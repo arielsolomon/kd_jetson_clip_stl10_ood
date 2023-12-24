@@ -114,6 +114,7 @@ def precompute_clip_stl10_text_embeddings(exp_name):
 
 
 def get_clip_stl10_text_embeddings(exp_name):
+    print('\nExperiment path name: ', "data/clip/"+exp_name+"/stl10_text_embeddings.pt")
     return torch.load("data/clip/"+exp_name+"/stl10_text_embeddings.pt")
 
 
@@ -311,7 +312,7 @@ def train_resnet18_zero_shot_train_only(f_name,exp_name):
         train_dataset=get_stl10_train_embedding_dataset(exp_name)
     )
 
-def train_resnet18_zero_shot(f_name, exp_name):
+def train_resnet18_zero_shot(exp_name,f_name):
     train_student_zero_shot(
         f_name,
         exp_name,

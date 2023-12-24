@@ -51,7 +51,7 @@ class EmbeddingDatasetWrapper(object):
         self.embeddings_dir = embeddings_dir
         for i in range(len(self.dataset)):
             embedding_path = os.path.join(self.embeddings_dir, f"embedding_{i}.pt")
-            assert os.path.exists(embedding_path)
+            #assert os.path.exists(embedding_path)
         
     def __len__(self) -> int:
         return len(self.dataset)
