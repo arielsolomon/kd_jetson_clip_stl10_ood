@@ -14,7 +14,7 @@ def run(exp_name, data_path):
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-path', type=str, default='/Data/federated_learning/kd_jetson_clip_stl10_ood/data/stl10', help='bin STL10 path')
-    parser.add_argument('--exp-name', type=str, default='ood_gaussian_noise04', help='experiment name')
+    parser.add_argument('--exp-name', type=str, default='ood_gaussian_noise04_labeled', help='experiment name')
     opt = parser.parse_args()
     return opt
 

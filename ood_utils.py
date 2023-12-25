@@ -60,7 +60,7 @@ def get_stl10_transform():
 
 
 def precompute_clip_stl10_image_embeddings(
-        output_dir, 
+        _,
         dataset_path,
         data_split,
         overwrite=False):
@@ -72,49 +72,50 @@ def precompute_clip_stl10_image_embeddings(
     )
 
     precompute_clip_image_embeddings(
-        output_dir,
+        _,
         dataset,
         overwrite
     )
 
 
-def precompute_clip_stl10_unlabeled_image_embeddings():
+def precompute_clip_stl10_unlabeled_image_embeddings(exp_name):
+
     precompute_clip_stl10_image_embeddings(
-        output_dir="data/clip/stl10_unlabeled_image_embeddings",
+        output_dir="data/clip/"+exp_name+"/stl10_unlabeled_image_embeddings",
         dataset_path="data/stl10",
         data_split="unlabeled"
     )
 
 
-def precompute_clip_stl10_train_image_embeddings():
+def precompute_clip_stl10_train_image_embeddings(exp_name):
     precompute_clip_stl10_image_embeddings(
-        output_dir="data/clip/stl10_train_image_embeddings",
+        output_dir="data/clip/"+exp_name+"/stl10_train_image_embeddings",
         dataset_path="data/stl10",
         data_split="train"
     )
 
 
-def precompute_clip_stl10_test_image_embeddings():
+def precompute_clip_stl10_test_image_embeddings(exp_name):
     precompute_clip_stl10_image_embeddings(
-        output_dir="data/clip/stl10_test_image_embeddings",
+        output_dir="data/clip/"+exp_name+"/stl10_test_image_embeddings",
         dataset_path="data/stl10",
         data_split="test"
     )
 
 
-def precompute_clip_stl10_text_embeddings():
+def precompute_clip_stl10_text_embeddings(exp_name):
     precompute_clip_text_embeddings(
-        output_path="data/clip/stl10_text_embeddings.pt",
+        output_path="data/clip/"+exp_name+"/stl10_text_embeddings.pt",
         labels=STL10_LABELS,
 
     )
 
 
-def get_clip_stl10_text_embeddings():
-    return torch.load("data/clip/stl10_text_embeddings.pt")
+def get_clip_stl10_text_embeddings(exp_name):
+    return torch.load("data/clip/"+exp_name+"/stl10_text_embeddings.pt")
 
 
-def get_stl10_unlabeled_embedding_dataset(transform=None):
+def get_stl10_unlabeled_embedding_dataset(exp_name,transform=None):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -124,11 +125,11 @@ def get_stl10_unlabeled_embedding_dataset(transform=None):
             split="unlabeled",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_unlabeled_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"/stl10_unlabeled_image_embeddings"
     )
 
 
-def get_stl10_train_embedding_dataset(transform=None):
+def get_stl10_train_embedding_dataset(exp_name, transform=None):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -138,18 +139,18 @@ def get_stl10_train_embedding_dataset(transform=None):
             split="train",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_train_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"/stl10_train_image_embeddings"
     )
 
 
-def get_stl10_train_unlabeled_embedding_dataset(transform=None):
+def get_stl10_train_unlabeled_embedding_dataset(exp_name,transform=None):
     return torch.utils.data.ConcatDataset([
-        get_stl10_train_embedding_dataset(transform),
+        get_stl10_train_embedding_dataset(exp_name,transform),
         get_stl10_unlabeled_embedding_dataset(transform)
     ])
 
 
-def get_stl10_test_embedding_dataset(transform=None):
+def get_stl10_test_embedding_dataset(exp_name, transform=None):
     if transform is None:
         transform = get_stl10_transform()
     return EmbeddingDatasetWrapper(
@@ -159,33 +160,33 @@ def get_stl10_test_embedding_dataset(transform=None):
             split="test",
             transform=transform
         ),
-        embeddings_dir="data/clip/stl10_test_image_embeddings"
+        embeddings_dir="data/clip/"+exp_name+"/stl10_test_image_embeddings"
     )
 
 
-def eval_stl10_train_clip_embeddings():
+def eval_stl10_train_clip_embeddings(exp_name):
     text_embeddings = get_clip_stl10_text_embeddings()
     dataset = get_stl10_train_embedding_dataset()
     accuracy = eval_dataset_clip_embeddings(dataset, text_embeddings)
-    with open("data/clip/stl10_train_clip_acc.txt", 'w') as f:
+    with open("data/clip/"+exp_name+"/stl10_train_clip_acc.txt", 'w') as f:
         f.write(f"ACCURACY: {accuracy}")
     return accuracy
 
 
-def eval_stl10_test_clip_embeddings():
+def eval_stl10_test_clip_embeddings(exp_name):
     text_embeddings = get_clip_stl10_text_embeddings()
     dataset = get_stl10_test_embedding_dataset()
     accuracy = eval_dataset_clip_embeddings(dataset, text_embeddings)
-    with open("data/clip/stl10_test_clip_acc.txt", 'w') as f:
+    with open("data/clip/"+exp_name+"/stl10_test_clip_acc.txt", 'w') as f:
         f.write(f"ACCURACY: {accuracy}")
     return accuracy
 
 # Probe ablation
 
 
-def train_probe_model_linear():
+def train_probe_model_linear(exp_name):
     train_probe_model(
-        output_dir="data/experiments/train_probe_model_linear",
+        output_dir="data/experiments/"+exp_name+"/train_probe_model_linear",
         probe_model=nn.Linear(512, len(STL10_LABELS)),
         train_dataset=get_stl10_train_embedding_dataset(),
         test_dataset=get_stl10_test_embedding_dataset(),
@@ -284,9 +285,9 @@ def train_student_zero_shot(
 
 # Temperature ablation
 
-def train_resnet18_from_scratch():
+def train_resnet18_from_scratch(exp_name):
     train_model_from_scratch(
-        output_dir="data/experiments/train_resnet18_from_scratch",
+        output_dir="data/experiments/"+exp_name+"/train_resnet18_from_scratch",
         model=timm.create_model("resnet18", num_classes=len(STL10_LABELS)),
         train_dataset=get_stl10_train_embedding_dataset(),
         test_dataset=get_stl10_test_embedding_dataset(),
@@ -314,22 +315,22 @@ def train_resnet18_zero_shot(f_name, exp_name):
         temperature=1.
     )
 
-def train_resnet18_zero_shot_t100():
+def train_resnet18_zero_shot_t100(exp_name):
     train_student_zero_shot(
-        output_dir=f"data/experiments/train_resnet18_zero_shot",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot",
         arch="resnet18",
         temperature=100.
     )
-def train_resnet18_zero_shot_tp5():
+def train_resnet18_zero_shot_tp5(exp_name):
     train_student_zero_shot(
-        output_dir=f"data/experiments/train_resnet18_zero_shot_tp5",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot_tp5",
         arch="resnet18",
         temperature=0.5
     )
 
-def train_resnet18_zero_shot_t2():
+def train_resnet18_zero_shot_t2(exp_name):
     train_student_zero_shot(
-        output_dir=f"data/experiments/train_resnet18_zero_shot_t2",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_zero_shot_t2",
         arch="resnet18",
         temperature=2.0
     )
@@ -351,30 +352,30 @@ def train_resnet18_linear_probe_train_only(f_name, exp_name):
         train_dataset=get_stl10_train_embedding_dataset()
     )
 
-def train_resnet18_linear_probe_tp5():
+def train_resnet18_linear_probe_tp5(exp_name):
     train_student_linear_probe(
-        output_dir=f"data/experiments/train_resnet18_linear_probe_tp5",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_linear_probe_tp5",
         arch="resnet18", 
         temperature=0.5
     )
 
-def train_resnet18_linear_probe_t2():
+def train_resnet18_linear_probe_t2(exp_name):
     train_student_linear_probe(
-        output_dir=f"data/experiments/train_resnet18_linear_probe_t2",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet18_linear_probe_t2",
         arch="resnet18", 
         temperature=2.0
     )
 
-def train_resnet34_linear_probe():
+def train_resnet34_linear_probe(exp_name):
     train_student_linear_probe(
-        output_dir=f"data/experiments/train_resnet34_linear_probe",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet34_linear_probe",
         arch="resnet34", 
         temperature=1.
     )
 
-def train_resnet50_linear_probe():
+def train_resnet50_linear_probe(exp_name):
     train_student_linear_probe(
-        output_dir=f"data/experiments/train_resnet50_linear_probe",
+        output_dir=f"data/experiments/"+exp_name+"/train_resnet50_linear_probe",
         arch="resnet50", 
         temperature=1.
     )
@@ -401,22 +402,22 @@ def train_embedding_text(output_dir: str, arch: str, train_dataset=None,
         nearest_embedding_weight_std=nearest_embedding_weight_std
     )
 
-def train_resnet18_embedding_text():
-    train_embedding_text(f"data/experiments/train_resnet18_embedding_text","resnet18")
+def train_resnet18_embedding_text(exp_name):
+    train_embedding_text(f"data/experiments/"+exp_name+"/train_resnet18_embedding_text","resnet18")
 
 
-def eval_resnet18_embedding_text():
+def eval_resnet18_embedding_text(exp_name):
     model = timm.create_model("resnet18", num_classes=512)
-    model.load_state_dict(torch.load("data/experiments/train_resnet18_embedding_text/checkpoint_48.pth"))
+    model.load_state_dict(torch.load("data/experiments/"+exp_name+"/train_resnet18_embedding_text/checkpoint_48.pth"))
 
     eval_embeddings_model(
-        output_dir=f"data/experiments/eval_resnet18_embedding_text",
+        output_dir=f"data/experiments/"+exp_name+"/eval_resnet18_embedding_text",
         model=model,
         dataset=get_stl10_test_embedding_dataset(),
         text_embeddings=get_clip_stl10_text_embeddings()
     )
 
-def eval_resnet18_embedding_linear():
+def eval_resnet18_embedding_linear(exp_name):
     model = timm.create_model("resnet18", num_classes=512)
     model.load_state_dict(torch.load("data/experiments/train_resnet18_embedding_text/checkpoint_48.pth"))
 
@@ -427,7 +428,7 @@ def eval_resnet18_embedding_linear():
     probe_model.load_state_dict(torch.load(probe_weights))
 
     eval_embeddings_model(
-        output_dir=f"data/experiments/eval_resnet18_embedding_linear",
+        output_dir=f"data/experiments/"+exp_name+"/eval_resnet18_embedding_linear",
         model=model,
         dataset=get_stl10_test_embedding_dataset(),
         probe_model=probe_model

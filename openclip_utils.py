@@ -63,6 +63,7 @@ class EmbeddingDatasetWrapper(object):
         return image, label, embedding
 
     def get_embedding(self, index):
+        self.embeddings_dir = 'data/clip/ood_gaussian_noise04_unlabeled/stl10_unlabeled_image_embeddings'
         embedding = torch.load(os.path.join(self.embeddings_dir, f"embedding_{index}.pt"))
         embedding = embedding[0].detach()
         return embedding
@@ -359,6 +360,7 @@ def train_student_classification_model(
 
         logstr = f"| EPOCH {epoch} | TRAIN LOSS {train_loss} | TEST ACC {test_acc} |"
         print(logstr)
+
         with open(os.path.join(output_dir, 'log.txt'), 'a') as f:
             f.write(logstr + "\n")
 
