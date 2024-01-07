@@ -52,11 +52,13 @@ STL10_LABELS = [
     'a truck'
 ]
 
-def get_stl10_transform():
-    transform = transforms.Compose([
-        transforms.ToTensor(),  # Convert images to PyTorch tensors
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),  # Normalize (optional)
-        transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.1)  # Add Gaussian noise
+def get_stl10_transform(noise_level):
+    random_noise = torch.randn(3, 96, 96) * noise_level  # Generate random noise once
+
+    transform = Compose([
+        ToTensor(),
+        Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        Lambda(lambda x: x + random_noise)  # Apply the pre-generated random noise
     ])
 
     return transform
